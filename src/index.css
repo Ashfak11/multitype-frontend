@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@theme {
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-mono: JetBrains Mono, monospace;
+  
+  /* Base colors */
+  --color-background: oklch(0.2 0.04 240);
+  --color-foreground: oklch(0.85 0.02 240);
+  
+  /* Card colors */
+  --color-card: oklch(0.23 0.036 240);
+  --color-card-foreground: oklch(0.85 0.02 240);
+  
+  /* Popover colors */
+  --color-popover: oklch(0.23 0.036 240);
+  --color-popover-foreground: oklch(0.85 0.02 240);
+  
+  /* Border and input */
+  --color-border: oklch(0.25 0.03 240);
+  --color-input: oklch(0.23 0.03 240);
+  --color-ring: oklch(0.65 0.15 35);
+  
+  /* Primary colors */
+  --color-primary: oklch(0.65 0.15 35);
+  --color-primary-foreground: oklch(0.2 0.04 240);
+  
+  /* Secondary colors */
+  --color-secondary: oklch(0.23 0.03 240);
+  --color-secondary-foreground: oklch(0.75 0.02 240);
+  
+  /* Muted colors */
+  --color-muted: oklch(0.25 0.03 240);
+  --color-muted-foreground: oklch(0.5 0.02 240);
+  
+  /* Accent colors */
+  --color-accent: oklch(0.6 0.14 35);
+  --color-accent-foreground: oklch(0.2 0.04 240);
+  
+  /* Destructive colors */
+  --color-destructive: oklch(0.6 0.15 0);
+  --color-destructive-foreground: oklch(1 0 0);
+  
+  /* Success colors */
+  --color-success: oklch(0.55 0.12 145);
+  --color-success-foreground: oklch(0.95 0.05 145);
+  
+  /* Typing specific colors */
+  --color-typing-correct: oklch(0.6 0.12 145);
+  --color-typing-incorrect: oklch(0.6 0.15 0);
+  --color-typing-current: oklch(0.65 0.15 35);
+  --color-typing-pending: oklch(0.5 0.02 240);
+  
+  /* Sidebar colors */
+  --color-sidebar-background: oklch(0.23 0.036 240);
+  --color-sidebar-foreground: oklch(0.85 0.02 240);
+  --color-sidebar-primary: oklch(0.65 0.15 35);
+  --color-sidebar-primary-foreground: oklch(0.2 0.04 240);
+  --color-sidebar-accent: oklch(0.23 0.03 240);
+  --color-sidebar-accent-foreground: oklch(0.85 0.02 240);
+  --color-sidebar-border: oklch(0.25 0.03 240);
+  --color-sidebar-ring: oklch(0.65 0.15 35);
+  
+  /* Radius */
+  --radius-lg: 0.75rem;
+  --radius-md: calc(0.75rem - 2px);
+  --radius-sm: calc(0.75rem - 4px);
+}
+
+@layer base {
+  * {
+    border-color: theme(colors.border);
+  }
+
+  body {
+    background-color: theme(colors.background);
+    color: theme(colors.foreground);
+    font-family: theme(fontFamily.sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, theme(colors.primary) 30%, transparent);
+    color: theme(colors.foreground);
+  }
+}
+
+@layer components {
+  .typing-char {
+    transition: color 75ms;
+  }
+
+  .typing-char-correct {
+    color: theme(colors.typing-correct);
+  }
+
+  .typing-char-incorrect {
+    color: theme(colors.typing-incorrect);
+  }
+
+  .typing-char-current {
+    color: theme(colors.typing-current);
+    border-left: 2px solid theme(colors.typing-current);
+    animation: pulse-cursor 1s ease-in-out infinite;
+  }
+
+  .typing-char-pending {
+    color: theme(colors.typing-pending);
+  }
+
+  .stat-value {
+    font-size: 2.25rem;
+    font-family: theme(fontFamily.mono);
+    font-weight: 700;
+    color: theme(colors.foreground);
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: theme(colors.muted-foreground);
+  }
+}
+
+@keyframes pulse-cursor {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
