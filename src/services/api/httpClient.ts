@@ -27,19 +27,34 @@ class HttpClient {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          ...this.getAuthHeaders(),
+          ...this.getAuthHeaders(endpoint),
           ...options.headers,
         },
       });
 
       clearTimeout(timeoutId);
 
-      const data = await response.json();
+      let data: any = null;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch (e) {
+          // Failed to parse JSON, likely empty body
+          data = null;
+        }
+      }
 
       if (!response.ok) {
+        // Handle Spring Boot error format or generic error
+        const errorMessage = data?.message || data?.error || response.statusText || 'Unknown error occurred';
         return {
           success: false,
-          error: data as ApiError,
+          error: {
+            code: data?.status?.toString() || response.status.toString(),
+            message: errorMessage,
+            details: data,
+          },
         };
       }
 
@@ -70,7 +85,12 @@ class HttpClient {
     }
   }
 
-  private getAuthHeaders(): Record<string, string> {
+  private getAuthHeaders(endpoint: string): Record<string, string> {
+    // Skip auth header for public endpoints to avoid 403 Forbidden
+    if (endpoint === '/auth/login' || endpoint === '/auth/register') {
+      return {};
+    }
+
     const token = localStorage.getItem('auth_token');
     if (token) {
       return { Authorization: `Bearer ${token}` };

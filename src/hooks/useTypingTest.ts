@@ -16,6 +16,7 @@ interface UseTypingTestReturn extends TypingState {
   config: TestConfig;
   handleKeyPress: (key: string) => void;
   reset: () => void;
+  startTest: () => void;
   getResult: () => TestResult | null;
 }
 
@@ -33,10 +34,13 @@ const createInitialState = (words: string[]): TypingState => ({
   incorrectTyped: 0,
 });
 
-export const useTypingTest = (): UseTypingTestReturn => {
+export const useTypingTest = (
+  initialWords?: string[],
+  options: { startOnFirstKey?: boolean } = { startOnFirstKey: true }
+): UseTypingTestReturn => {
   const { config } = useTestConfig();
   const [state, setState] = useState<TypingState>(() =>
-    createInitialState(generateWords(config.wordCount || 50, config))
+    createInitialState(initialWords || generateWords(config.wordCount || 50, config))
   );
   const [timeLeft, setTimeLeft] = useState<number>(config.duration);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -57,9 +61,9 @@ export const useTypingTest = (): UseTypingTestReturn => {
   const reset = useCallback(() => {
     clearTimer();
     resultSavedRef.current = false;
-    setState(createInitialState(generateWords(config.wordCount || 50, config)));
+    setState(createInitialState(initialWords || generateWords(config.wordCount || 50, config)));
     setTimeLeft(config.duration);
-  }, [config, clearTimer]);
+  }, [config, clearTimer, initialWords]);
 
   const finishTest = useCallback(() => {
     clearTimer();
@@ -85,6 +89,17 @@ export const useTypingTest = (): UseTypingTestReturn => {
     }, 1000);
   }, [finishTest]);
 
+  const startTest = useCallback(() => {
+    if (!state.isActive) {
+      setState(prev => ({
+        ...prev,
+        isActive: true,
+        startTime: Date.now()
+      }));
+      startTimer();
+    }
+  }, [state.isActive, startTimer]);
+
   const handleKeyPress = useCallback(
     (key: string) => {
       setState((prev) => {
@@ -92,8 +107,8 @@ export const useTypingTest = (): UseTypingTestReturn => {
 
         let newState = { ...prev };
 
-        // Start the test on first character press
-        if (!prev.isActive && key.length === 1 && key !== ' ') {
+        // Start the test on first character press IF enabled
+        if (options.startOnFirstKey && !prev.isActive && key.length === 1 && key !== ' ') {
           newState = {
             ...newState,
             isActive: true,
@@ -101,6 +116,8 @@ export const useTypingTest = (): UseTypingTestReturn => {
           };
           startTimer();
         }
+
+
 
         const currentWord = prev.words[prev.currentWordIndex];
         if (!currentWord) return prev;
@@ -191,7 +208,7 @@ export const useTypingTest = (): UseTypingTestReturn => {
         return prev;
       });
     },
-    [startTimer]
+    [startTimer, options.startOnFirstKey]
   );
 
   // Calculate stats
@@ -248,6 +265,7 @@ export const useTypingTest = (): UseTypingTestReturn => {
     config,
     handleKeyPress,
     reset,
+    startTest,
     getResult,
   };
 };

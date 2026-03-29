@@ -1,100 +1,173 @@
 // ============================================
-// WEBSOCKET MANAGER - Real-time Communication
+// WEBSOCKET MANAGER - STOMP Implementation
 // ============================================
 
-import { API_CONFIG } from '@/config/constants';
-import type { WSMessage, WSMessageType, PlayerProgress } from '@/types';
+import { Client, IMessage } from '@stomp/stompjs';
+import { WSEvent, WSEventType } from '@/types';
 
-export type WSEventHandler = (message: WSMessage) => void;
+// Define the shape of our event handler
+type WSEventHandler = (event: WSEvent) => void;
 
 class WebSocketManager {
-  private socket: WebSocket | null = null;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000;
-  private eventHandlers: Map<WSMessageType, Set<WSEventHandler>> = new Map();
-  private globalHandlers: Set<WSEventHandler> = new Set();
-  private roomCode: string | null = null;
-  private playerId: string | null = null;
+  private client: Client | null = null;
+  private connected: boolean = false;
+  private roomSubscription: any = null; // StompSubscription
+  private eventHandlers: Map<WSEventType, Set<WSEventHandler>> = new Map();
+  private debug: boolean = true;
 
-  connect(roomCode: string, playerId: string): Promise<void> {
+  constructor() {
+    this.client = null;
+  }
+
+  /**
+   * Connect to the WebSocket server using STOMP over raw Websocket
+   * @param token JWT token for authentication
+   */
+  connect(token: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.roomCode = roomCode;
-      this.playerId = playerId;
+      // If already connected, just resolve
+      if (this.client?.connected) {
+        resolve();
+        return;
+      }
 
-      const url = `${API_CONFIG.WS_URL}/rooms/${roomCode}?playerId=${playerId}`;
-      
-      try {
-        this.socket = new WebSocket(url);
+      const brokerURL = 'ws://localhost:8080/typing-ws/websocket';
 
-        this.socket.onopen = () => {
-          console.log('[WebSocket] Connected to room:', roomCode);
-          this.reconnectAttempts = 0;
+      this.client = new Client({
+        brokerURL,
+        connectHeaders: {
+          Authorization: `Bearer ${token}`,
+        },
+        debug: (str) => {
+          if (this.debug) console.log('[STOMP] ' + str);
+        },
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+        onConnect: (frame) => {
+          this.connected = true;
+          console.log('[STOMP] Connected');
           resolve();
-        };
+        },
+        onStompError: (frame) => {
+          console.error('[STOMP] Broker reported error: ' + frame.headers['message']);
+          console.error('[STOMP] Additional details: ' + frame.body);
+          reject(new Error(frame.headers['message']));
+        },
+        onWebSocketClose: () => {
+          this.connected = false;
+          console.log('[STOMP] Connection closed');
+        },
+        onDisconnect: () => {
+          this.connected = false;
+          console.log('[STOMP] Disconnected');
+        }
+      });
 
-        this.socket.onmessage = (event) => {
-          try {
-            const message: WSMessage = JSON.parse(event.data);
-            this.handleMessage(message);
-          } catch (error) {
-            console.error('[WebSocket] Failed to parse message:', error);
-          }
-        };
+      this.client.activate();
+    });
+  }
 
-        this.socket.onclose = (event) => {
-          console.log('[WebSocket] Connection closed:', event.code, event.reason);
-          this.handleDisconnect();
-        };
+  /**
+   * Subscribe to a specific room topic
+   * @param roomCode The room code to listen to
+   */
+  subscribeToRoom(roomCode: string, onMessageReceived?: (event: WSEvent) => void) {
+    if (!this.client || !this.client.connected) {
+      console.error('[STOMP] Cannot subscribe - not connected');
+      return;
+    }
 
-        this.socket.onerror = (error) => {
-          console.error('[WebSocket] Error:', error);
-          reject(error);
-        };
+    if (this.roomSubscription) {
+      this.roomSubscription.unsubscribe();
+    }
+
+    console.log(`[STOMP] Subscribing to /topic/room/${roomCode}`);
+    this.roomSubscription = this.client.subscribe(`/topic/room/${roomCode}`, (message: IMessage) => {
+      try {
+        const event: WSEvent = JSON.parse(message.body);
+        this.handleEvent(event);
+        if (onMessageReceived) {
+          onMessageReceived(event);
+        }
       } catch (error) {
-        reject(error);
+        console.error('[STOMP] Failed to parse message body', error);
       }
     });
   }
 
-  disconnect(): void {
-    if (this.socket) {
-      this.socket.close(1000, 'User disconnected');
-      this.socket = null;
-    }
-    this.roomCode = null;
-    this.playerId = null;
-    this.eventHandlers.clear();
-    this.globalHandlers.clear();
-  }
-
-  private handleMessage(message: WSMessage): void {
-    // Call type-specific handlers
-    const handlers = this.eventHandlers.get(message.type);
-    if (handlers) {
-      handlers.forEach((handler) => handler(message));
-    }
-
-    // Call global handlers
-    this.globalHandlers.forEach((handler) => handler(message));
-  }
-
-  private handleDisconnect(): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts && this.roomCode && this.playerId) {
-      this.reconnectAttempts++;
-      console.log(`[WebSocket] Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-      
-      setTimeout(() => {
-        if (this.roomCode && this.playerId) {
-          this.connect(this.roomCode, this.playerId).catch(() => {
-            console.error('[WebSocket] Reconnection failed');
-          });
-        }
-      }, this.reconnectDelay * this.reconnectAttempts);
+  /**
+   * Disconnect from the WebSocket server
+   */
+  disconnect() {
+    if (this.client) {
+      this.client.deactivate();
+      this.client = null;
+      this.connected = false;
     }
   }
 
-  on(type: WSMessageType, handler: WSEventHandler): () => void {
+  /**
+   * Publish READY event
+   */
+  sendReady(roomCode: string) {
+    this.publish(roomCode, 'ready', {});
+  }
+
+  /**
+   * Publish PROGRESS event (Word completion)
+   * @param currentCharIndex The number of characters typed in current word
+   */
+  sendProgress(roomCode: string, currentWordIndex: number, currentCharIndex: number) {
+    this.publish(roomCode, 'progress', { currentWordIndex, currentCharIndex });
+  }
+
+  /**
+   * Publish FINISH event
+   */
+  sendFinish(roomCode: string) {
+    this.publish(roomCode, 'finish', {});
+  }
+
+  /**
+   * Generic publish method
+   */
+  private publish(roomCode: string, endpoint: string, body: any) {
+    if (!this.client || !this.client.connected) {
+      console.warn('[STOMP] Cannot publish - not connected');
+      return;
+    }
+
+    // Destination: /app/room/{roomCode}/{endpoint}
+    // e.g. /app/room/A3FX9K/ready
+    const destination = `/app/room/${roomCode}/${endpoint}`;
+    this.client.publish({
+      destination,
+      body: JSON.stringify(body),
+    });
+  }
+
+  /**
+   * Generic send method for arbitrary destinations
+   */
+  send(destination: string, body: any) {
+    if (!this.client || !this.client.connected) {
+      console.warn('[STOMP] Cannot send - not connected');
+      return;
+    }
+
+    this.client.publish({
+      destination,
+      body: JSON.stringify(body),
+    });
+  }
+
+  // --- Event Handling ---
+
+  /**
+   * Register an event handler for a specific event type
+   */
+  on(type: WSEventType, handler: WSEventHandler): () => void {
     if (!this.eventHandlers.has(type)) {
       this.eventHandlers.set(type, new Set());
     }
@@ -102,51 +175,30 @@ class WebSocketManager {
 
     // Return unsubscribe function
     return () => {
-      this.eventHandlers.get(type)?.delete(handler);
+      const handlers = this.eventHandlers.get(type);
+      if (handlers) {
+        handlers.delete(handler);
+      }
     };
   }
 
-  onAny(handler: WSEventHandler): () => void {
-    this.globalHandlers.add(handler);
-    return () => {
-      this.globalHandlers.delete(handler);
-    };
-  }
+  /**
+   * Dispatch event to registered handlers
+   */
+  private handleEvent(event: WSEvent) {
+    if (this.debug) console.log('[STOMP] Received Event:', event.type, event.payload);
 
-  send<T>(type: WSMessageType, payload: T): void {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      const message: WSMessage<T> = {
-        type,
-        payload,
-        timestamp: new Date().toISOString(),
-      };
-      this.socket.send(JSON.stringify(message));
-    } else {
-      console.warn('[WebSocket] Cannot send message - not connected');
+    const handlers = this.eventHandlers.get(event.type);
+    if (handlers) {
+      handlers.forEach((handler) => {
+        try {
+          handler(event);
+        } catch (error) {
+          console.error(`[STOMP] Error in handler for ${event.type}:`, error);
+        }
+      });
     }
-  }
-
-  // Convenience methods for common actions
-  sendProgress(progress: PlayerProgress): void {
-    this.send('PLAYER_PROGRESS', { playerId: this.playerId, progress });
-  }
-
-  sendReady(ready: boolean): void {
-    this.send('PLAYER_READY', { playerId: this.playerId, ready });
-  }
-
-  isConnected(): boolean {
-    return this.socket?.readyState === WebSocket.OPEN;
-  }
-
-  getPlayerId(): string | null {
-    return this.playerId;
-  }
-
-  getRoomCode(): string | null {
-    return this.roomCode;
   }
 }
 
-// Singleton instance
 export const wsManager = new WebSocketManager();

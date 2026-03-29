@@ -4,12 +4,16 @@
 
 // ==================== User Types ====================
 export interface User {
-  id: string;
+  playerId: string;    // UUID from backend
   username: string;
-  email?: string;
-  avatar?: string;
+  role: string;
   createdAt: string;
-  stats: UserStats;
+  // Stats are not currently returned by backend, making optional
+  stats?: UserStats;
+}
+
+export interface LoginResponse {
+  token: string;
 }
 
 export interface UserStats {
@@ -65,81 +69,105 @@ export interface TypingState {
 export type CharState = 'correct' | 'incorrect' | 'extra';
 
 // ==================== Room/Multiplayer Types ====================
-export type RoomStatus = 'waiting' | 'countdown' | 'playing' | 'finished';
+export type RoomStatus = 'WAITING' | 'COUNTDOWN' | 'INGAME' | 'IN_PROGRESS' | 'FINISHED'; // Matches backend enum usually, or mapped
+export type PlayerRole = 'CREATOR' | 'JOINER';
+export type PlayerStatus = 'IDLE' | 'READY' | 'IN_GAME' | 'FINISHED';
 
 export interface Room {
-  id: string;
-  code: string;
-  hostId: string;
-  status: RoomStatus;
-  config: TestConfig;
-  players: Player[];
-  words: string[];
-  startTime?: string;
-  endTime?: string;
-  createdAt: string;
+  roomId: number;
+  roomCode: string;
+  roomStatus: RoomStatus;
+  players: PlayerSnapshot[];
+  wordsPayload?: string; // "the quick brown..."
 }
 
-export interface Player {
-  id: string;
+export interface PlayerSnapshot {
+  playerId: string;
   username: string;
-  avatar?: string;
-  isHost: boolean;
-  isReady: boolean;
-  progress: PlayerProgress;
-}
-
-export interface PlayerProgress {
+  role: PlayerRole;
+  playerStatus: PlayerStatus;
   currentWordIndex: number;
   currentCharIndex: number;
-  wpm: number;
-  accuracy: number;
-  finished: boolean;
-  finishTime?: number;
+  // WPM/Stats might not be in snapshot yet, but we can compute or add if backend sends
+}
+
+// Response from /api/rooms/{roomCode}/state
+export interface RoomState {
+  roomId: number;
+  roomCode: string;
+  roomStatus: RoomStatus;
+  players: PlayerSnapshot[];
+  wordsPayload: string | null;
 }
 
 // ==================== WebSocket Types ====================
-export type WSMessageType = 
-  | 'ROOM_CREATED'
-  | 'ROOM_JOINED'
+// Incoming Events from Backend
+export type WSEventType =
   | 'PLAYER_JOINED'
   | 'PLAYER_LEFT'
   | 'PLAYER_READY'
-  | 'GAME_STARTING'
-  | 'GAME_STARTED'
-  | 'PLAYER_PROGRESS'
-  | 'GAME_FINISHED'
-  | 'ERROR';
+  | 'COUNTDOWN'
+  | 'PROGRESS_UPDATE'
+  | 'GAME_OVER'
+  | 'ROOM_CLOSED';
 
-export interface WSMessage<T = unknown> {
-  type: WSMessageType;
+export interface WSEvent<T = any> {
+  type: WSEventType;
   payload: T;
-  timestamp: string;
-}
-
-export interface WSRoomCreatedPayload {
-  room: Room;
+  // timestamp might not be in all events, backend specific
 }
 
 export interface WSPlayerJoinedPayload {
-  player: Player;
-  room: Room;
+  newPlayer: PlayerSnapshot;
+  allPlayers: PlayerSnapshot[];
+  roomStatus: RoomStatus;
 }
 
-export interface WSPlayerProgressPayload {
+export interface WSPlayerLeftPayload {
   playerId: string;
-  progress: PlayerProgress;
+  username: string;
+  roomStatus: RoomStatus;
 }
 
-export interface WSGameStartingPayload {
-  countdown: number;
+export interface WSPlayerReadyPayload {
+  playerId: string;
+  username: string;
+  playerStatus: PlayerStatus;
+  allReady: boolean;
 }
 
-export interface WSGameStartedPayload {
-  startTime: string;
-  words: string[];
+export interface WSCountdownPayload {
+  count: number;
+  wordsPayload?: string; // Sent when count === 0
 }
 
+export interface WSProgressUpdatePayload {
+  playerId: string;
+  username: string;
+  currentWordIndex: number;
+  currentCharIndex: number;
+  totalWords: number;
+}
+
+// Helper for sending progress
+export interface WSProgressMessage {
+  currentWordIndex: number;
+  currentCharIndex: number;
+}
+
+export interface WSGameOverPayload {
+  winnerId: string;
+  winnerUsername: string;
+  finalStandings: PlayerSnapshot[]; // assuming standings usually return players
+  roomStatus: RoomStatus;
+}
+
+export interface WSRoomClosedPayload {
+  reason: string;
+  roomStatus: RoomStatus;
+}
+
+// Error payload
 export interface WSErrorPayload {
   code: string;
   message: string;

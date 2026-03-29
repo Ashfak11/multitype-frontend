@@ -7,6 +7,7 @@ import { AuthProvider, TestConfigProvider, RoomProvider } from "@/context";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import RoomPage from "./pages/RoomPage";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
 
@@ -16,21 +17,22 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TestConfigProvider>
-        <RoomProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <RoomProvider>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/room/:roomCode" element={<RoomPage />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </RoomProvider>
+            </RoomProvider>
+          </BrowserRouter>
+        </TooltipProvider>
       </TestConfigProvider>
     </AuthProvider>
   </QueryClientProvider>

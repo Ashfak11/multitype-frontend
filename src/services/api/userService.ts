@@ -6,18 +6,16 @@ import { httpClient } from './httpClient';
 import type { ApiResponse, User, UserStats } from '@/types';
 
 export interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface RegisterRequest {
   username: string;
-  email: string;
   password: string;
 }
 
 export interface LoginResponse {
-  user: User;
   token: string;
 }
 
@@ -27,9 +25,9 @@ export const userService = {
     return httpClient.post<LoginResponse>('/auth/login', credentials);
   },
 
-  async register(data: RegisterRequest): Promise<ApiResponse<LoginResponse>> {
-    return httpClient.post<LoginResponse>('/auth/register', data);
-  },
+  async register(data: RegisterRequest): Promise<ApiResponse<void>> {
+    return httpClient.post<void>('/auth/register', data);
+  }, //returns void
 
   async logout(): Promise<ApiResponse<void>> {
     return httpClient.post<void>('/auth/logout');
@@ -37,7 +35,7 @@ export const userService = {
 
   // User Profile
   async getCurrentUser(): Promise<ApiResponse<User>> {
-    return httpClient.get<User>('/users/me');
+    return httpClient.get<User>('/players/me');
   },
 
   async updateProfile(data: Partial<User>): Promise<ApiResponse<User>> {

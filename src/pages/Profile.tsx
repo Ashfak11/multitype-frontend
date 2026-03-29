@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  User, 
-  Zap, 
-  Target, 
-  Clock, 
+import { useAuth } from '@/context/AuthContext';
+import {
+  ArrowLeft,
+  User,
+  Zap,
+  Target,
+  Clock,
   TrendingUp,
   BarChart3,
   History,
@@ -35,6 +36,7 @@ import { toast } from 'sonner';
 
 const Profile: React.FC = () => {
   const { results, stats, personalBests, clearHistory } = useTestHistory();
+  const { user } = useAuth();
   const [chartView, setChartView] = useState<'wpm' | 'accuracy'>('wpm');
 
   const formatTime = (seconds: number) => {
@@ -54,11 +56,11 @@ const Profile: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="max-w-5xl mx-auto px-4 py-8">
         {/* Back link */}
-        <Link 
-          to="/" 
+        <Link
+          to="/"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -77,7 +79,7 @@ const Profile: React.FC = () => {
               </div>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Your Profile</h1>
+              <h1 className="text-2xl font-bold text-foreground">{user?.username}</h1>
               <p className="text-muted-foreground">
                 {stats.totalTests} tests completed
               </p>

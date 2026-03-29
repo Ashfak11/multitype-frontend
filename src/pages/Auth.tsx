@@ -11,14 +11,16 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 const loginSchema = z.object({
-  email: z.string().trim().email('Invalid email address'),
+  username: z.string().trim().min(1, 'Username is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 const registerSchema = z.object({
   username: z.string().trim().min(3, 'Username must be at least 3 characters').max(20, 'Username must be less than 20 characters'),
-  email: z.string().trim().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/^[a-zA-Z0-9]+$/, 'Password can only contain letters and numbers'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -30,29 +32,28 @@ const Auth: React.FC = () => {
   const { login, register, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  
+
   // Signup form state
   const [signupUsername, setSignupUsername] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const result = loginSchema.safeParse({ email: loginEmail, password: loginPassword });
+
+    const result = loginSchema.safeParse({ username: loginUsername, password: loginPassword });
     if (!result.success) {
-      toast.error(result.error.errors[0].message);
+      toast.error(result.error.issues[0].message);
       return;
     }
-    
+
     setIsSubmitting(true);
     try {
-      await login(loginEmail, loginPassword);
+      await login(loginUsername, loginPassword);
       toast.success('Welcome back!');
       navigate('/');
     } catch (error) {
@@ -64,22 +65,21 @@ const Auth: React.FC = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const result = registerSchema.safeParse({
       username: signupUsername,
-      email: signupEmail,
       password: signupPassword,
       confirmPassword: signupConfirmPassword,
     });
-    
+
     if (!result.success) {
-      toast.error(result.error.errors[0].message);
+      toast.error(result.error.issues[0].message);
       return;
     }
-    
+
     setIsSubmitting(true);
     try {
-      await register(signupUsername, signupEmail, signupPassword);
+      await register(signupUsername, signupPassword);
       toast.success('Account created successfully!');
       navigate('/');
     } catch (error) {
@@ -100,14 +100,14 @@ const Auth: React.FC = () => {
         <ArrowLeft className="w-4 h-4" />
         Back to typing
       </Button>
-      
+
       {/* Logo */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
           <Keyboard className="w-6 h-6 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">SwiftType</h1>
+          <h1 className="text-2xl font-bold text-foreground">MultiType</h1>
           <p className="text-sm text-muted-foreground">Type faster, compete harder</p>
         </div>
       </div>
@@ -118,38 +118,38 @@ const Auth: React.FC = () => {
             {activeTab === 'login' ? 'Welcome back' : 'Create an account'}
           </CardTitle>
           <CardDescription>
-            {activeTab === 'login' 
+            {activeTab === 'login'
               ? 'Sign in to track your progress and compete'
               : 'Join the typing race and climb the leaderboard'
             }
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="login" className="mt-0">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-username">Username</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
+                      id="login-username"
+                      type="text"
+                      placeholder="Username"
+                      value={loginUsername}
+                      onChange={(e) => setLoginUsername(e.target.value)}
                       className="pl-10"
                       required
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="login-password">Password</Label>
                   <div className="relative">
@@ -165,9 +165,9 @@ const Auth: React.FC = () => {
                     />
                   </div>
                 </div>
-                
-                <Button 
-                  type="submit" 
+
+                <Button
+                  type="submit"
                   className="w-full h-11"
                   disabled={isSubmitting || isLoading}
                 >
@@ -182,7 +182,7 @@ const Auth: React.FC = () => {
                 </Button>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="signup" className="mt-0">
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
@@ -200,23 +200,7 @@ const Auth: React.FC = () => {
                     />
                   </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
                   <div className="relative">
@@ -232,7 +216,7 @@ const Auth: React.FC = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="signup-confirm-password">Confirm Password</Label>
                   <div className="relative">
@@ -248,9 +232,9 @@ const Auth: React.FC = () => {
                     />
                   </div>
                 </div>
-                
-                <Button 
-                  type="submit" 
+
+                <Button
+                  type="submit"
                   className="w-full h-11"
                   disabled={isSubmitting || isLoading}
                 >
@@ -266,7 +250,7 @@ const Auth: React.FC = () => {
               </form>
             </TabsContent>
           </Tabs>
-          
+
           <p className="text-xs text-center text-muted-foreground mt-6">
             By continuing, you agree to our Terms of Service and Privacy Policy
           </p>

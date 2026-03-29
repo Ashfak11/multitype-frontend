@@ -19,7 +19,7 @@ export const Header: React.FC = () => {
 
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
-  
+
   const navItems = [
     { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
   ];
@@ -39,11 +39,11 @@ export const Header: React.FC = () => {
     //     <div className="flex items-center gap-3">
     //       <Keyboard className="w-8 h-8 text-primary" />
     //       <h1 className="text-2xl font-bold tracking-tight">
-    //         <span className="text-foreground">swift</span>
-    //         <span className="text-primary">type</span>
+    //         <span className="text-foreground">Multi</span>
+    //         <span className="text-primary">Type</span>
     //       </h1>
     //     </div>
-        
+
     //     <nav className="flex items-center gap-6">
     //       <span className="text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
     //         Settings
@@ -59,11 +59,11 @@ export const Header: React.FC = () => {
         <Link to="/" className="flex items-center gap-3 group">
           <Keyboard className="w-8 h-8 text-primary group-hover:scale-110 transition-transform" />
           <h1 className="text-2xl font-bold tracking-tight">
-            <span className="text-foreground">swift</span>
-            <span className="text-primary">type</span>
+            <span className="text-foreground">Multi</span>
+            <span className="text-primary">Type</span>
           </h1>
         </Link>
-        
+
         <nav className="flex items-center gap-1">
           {navItems.map(({ path, label, icon: Icon }) => (
             <Link
@@ -80,7 +80,7 @@ export const Header: React.FC = () => {
               <span className="hidden sm:inline">{label}</span>
             </Link>
           ))}
-          
+
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -95,7 +95,6 @@ export const Header: React.FC = () => {
               <DropdownMenuContent align="end" className="w-48">
                 <div className="px-2 py-1.5">
                   <p className="text-sm font-medium">{user?.username}</p>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>

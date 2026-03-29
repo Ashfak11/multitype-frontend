@@ -5,54 +5,54 @@
 @theme {
   --font-sans: Inter, system-ui, sans-serif;
   --font-mono: JetBrains Mono, monospace;
-  
+
   /* Base colors */
   --color-background: oklch(0.2 0.04 240);
   --color-foreground: oklch(0.85 0.02 240);
-  
+
   /* Card colors */
   --color-card: oklch(0.23 0.036 240);
   --color-card-foreground: oklch(0.85 0.02 240);
-  
+
   /* Popover colors */
   --color-popover: oklch(0.23 0.036 240);
   --color-popover-foreground: oklch(0.85 0.02 240);
-  
+
   /* Border and input */
   --color-border: oklch(0.25 0.03 240);
   --color-input: oklch(0.23 0.03 240);
   --color-ring: oklch(0.65 0.15 35);
-  
+
   /* Primary colors */
   --color-primary: oklch(0.65 0.15 35);
   --color-primary-foreground: oklch(0.2 0.04 240);
-  
+
   /* Secondary colors */
   --color-secondary: oklch(0.23 0.03 240);
   --color-secondary-foreground: oklch(0.75 0.02 240);
-  
+
   /* Muted colors */
   --color-muted: oklch(0.25 0.03 240);
   --color-muted-foreground: oklch(0.5 0.02 240);
-  
+
   /* Accent colors */
   --color-accent: oklch(0.6 0.14 35);
   --color-accent-foreground: oklch(0.2 0.04 240);
-  
+
   /* Destructive colors */
   --color-destructive: oklch(0.6 0.15 0);
   --color-destructive-foreground: oklch(1 0 0);
-  
+
   /* Success colors */
   --color-success: oklch(0.55 0.12 145);
   --color-success-foreground: oklch(0.95 0.05 145);
-  
+
   /* Typing specific colors */
   --color-typing-correct: oklch(0.6 0.12 145);
   --color-typing-incorrect: oklch(0.6 0.15 0);
   --color-typing-current: oklch(0.65 0.15 35);
   --color-typing-pending: oklch(0.5 0.02 240);
-  
+
   /* Sidebar colors */
   --color-sidebar-background: oklch(0.23 0.036 240);
   --color-sidebar-foreground: oklch(0.85 0.02 240);
@@ -62,7 +62,7 @@
   --color-sidebar-accent-foreground: oklch(0.85 0.02 240);
   --color-sidebar-border: oklch(0.25 0.03 240);
   --color-sidebar-ring: oklch(0.65 0.15 35);
-  
+
   /* Radius */
   --radius-lg: 0.75rem;
   --radius-md: calc(0.75rem - 2px);
@@ -101,8 +101,17 @@
   }
 
   .typing-char-current {
-    color: theme(colors.typing-current);
-    border-left: 2px solid theme(colors.typing-current);
+    position: relative;
+  }
+
+  .typing-char-current::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: theme(colors.typing-current);
     animation: pulse-cursor 1s ease-in-out infinite;
   }
 
@@ -126,9 +135,12 @@
 }
 
 @keyframes pulse-cursor {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -139,6 +151,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -154,6 +167,7 @@
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -162,4 +176,118 @@
 
 .animate-scale-in {
   animation: scale-in 0.2s ease-out;
+}
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.opponent-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  background-color: #f97316;
+  /* Orange-500 */
+  margin-right: 1px;
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.typing-char-opponent {
+  position: relative;
+}
+
+.typing-char-opponent::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #f97316;
+  animation: pulse-cursor 1s ease-in-out infinite;
+}
+
+/* Hide scrollbar but keep scrolling functional */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Opera */
+}
+
+/* Subtle pulse animation for active word */
+@keyframes pulse-subtle {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.95;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 1.5s ease-in-out infinite;
 }

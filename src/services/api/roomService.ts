@@ -16,33 +16,27 @@ export interface JoinRoomRequest {
 }
 
 export const roomService = {
-  // Room Management
-  async createRoom(data: CreateRoomRequest): Promise<ApiResponse<Room>> {
-    return httpClient.post<Room>('/rooms', data);
+  // Create Room
+  async createRoom(): Promise<ApiResponse<{ roomId: number; roomCode: string; roomStatus: string; creator: any }>> {
+    console.log('[RoomService] Creating room');
+    return httpClient.post('/rooms/create');
   },
 
-  async joinRoom(data: JoinRoomRequest): Promise<ApiResponse<Room>> {
-    return httpClient.post<Room>(`/rooms/${data.roomCode}/join`, { username: data.username });
+  // Join Room
+  async joinRoom(roomCode: string): Promise<ApiResponse<Room>> {
+    console.log(`[RoomService] Joining room: ${roomCode}`);
+    return httpClient.post('/rooms/join', { roomCode: roomCode.trim().toUpperCase() });
   },
 
+  // Get Room State
+  async getRoomState(roomCode: string): Promise<ApiResponse<Room>> {
+    const sanitizedCode = roomCode.trim().toUpperCase();
+    // Backend returns { success: true, data: { ... } } which matches ApiResponse<Room>
+    return httpClient.get<Room>(`/rooms/${sanitizedCode}/state`);
+  },
+
+  // Leave Room
   async leaveRoom(roomCode: string): Promise<ApiResponse<void>> {
-    return httpClient.post<void>(`/rooms/${roomCode}/leave`);
-  },
-
-  async getRoom(roomCode: string): Promise<ApiResponse<Room>> {
-    return httpClient.get<Room>(`/rooms/${roomCode}`);
-  },
-
-  // Room Actions
-  async setReady(roomCode: string, ready: boolean): Promise<ApiResponse<void>> {
-    return httpClient.post<void>(`/rooms/${roomCode}/ready`, { ready });
-  },
-
-  async startGame(roomCode: string): Promise<ApiResponse<void>> {
-    return httpClient.post<void>(`/rooms/${roomCode}/start`);
-  },
-
-  async kickPlayer(roomCode: string, playerId: string): Promise<ApiResponse<void>> {
-    return httpClient.post<void>(`/rooms/${roomCode}/kick`, { playerId });
+    return httpClient.post<void>(`/rooms/${roomCode.trim().toUpperCase()}/leave`);
   },
 };
