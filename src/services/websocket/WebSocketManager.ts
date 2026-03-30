@@ -31,6 +31,7 @@ class WebSocketManager {
         return;
       }
 
+
       const brokerURL = `${import.meta.env.VITE_WS_URL}/websocket`;
 
       this.client = new Client({
