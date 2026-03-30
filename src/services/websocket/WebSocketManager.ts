@@ -31,7 +31,7 @@ class WebSocketManager {
         return;
       }
 
-      const brokerURL = 'ws://localhost:8080/typing-ws/websocket';
+      const brokerURL = `${import.meta.env.VITE_WS_URL}/websocket`;
 
       this.client = new Client({
         brokerURL,
